@@ -1,5 +1,6 @@
 import { rewriteURL } from "./url";
-import { parse } from "acorn-loose";
+import { parse, Options } from "acorn";
+import { parse as parseLoose } from "acorn-loose";
 import { generate } from "astring";
 import { BaseCallExpression, CallExpression, Node } from "estree";
 import { walk } from "estree-walker";
@@ -21,7 +22,7 @@ const GLOBAL_VARS = [
 
 export function rewriteJS(js: string, scope: string | URL): string {
   // error-tolerant parsing configuration
-  const ast = parse(js, {
+  const acornConfig: Options = {
     sourceType: "module",
     allowImportExportEverywhere: true,
     allowAwaitOutsideFunction: true,
@@ -33,10 +34,18 @@ export function rewriteJS(js: string, scope: string | URL): string {
     ecmaVersion: "latest",
     preserveParens: false,
     allowReserved: true
-  }) as Node;
+  };
+
+  let ast: Node;
+  try {
+    ast = parse(js, acornConfig) as Node;
+  } catch (e) {
+    __$ampere.logger.warn("Failed to parse JS", e);
+    ast = parseLoose(js, acornConfig) as Node;
+  }
 
   walk(ast, {
-    leave(node, parent, prop, index) {
+    leave(node, parent, prop) {
       if (node.type === "ImportDeclaration") {
         // rewrite static imports now
         if (typeof node.source.value === "string") {
@@ -45,7 +54,10 @@ export function rewriteJS(js: string, scope: string | URL): string {
       } else if (node.type === "ImportExpression") {
         // rewrite dynamic imports during runtime
         node.source = createScopedExpression(
-          [node.source, { type: "Literal", value: scope.toString() }],
+          [
+            node.source,
+            { type: "Literal", value: `globalThis.__$ampere.base` }
+          ],
           "rewriteURL"
         );
       } else if (node.type === "Identifier") {
@@ -53,7 +65,6 @@ export function rewriteJS(js: string, scope: string | URL): string {
         if (
           GLOBAL_VARS.includes(node.name) &&
           ![
-            "ArrowFunctionExpression",
             "FunctionDeclaration",
             "LabeledStatement",
             "CatchClause",
@@ -64,12 +75,15 @@ export function rewriteJS(js: string, scope: string | URL): string {
             "ClassDeclaration",
             "ForInStatement",
             "ForOfStatement",
-            "ForStatement"
+            "ForStatement",
+            "MethodDefinition"
           ].includes(parent?.type as string)
         ) {
           // Preserve global variables in object definitions and left hand assignments
           if (parent?.type === "MemberExpression" && prop !== "object") return;
           if (parent?.type === "AssignmentExpression" && prop !== "right")
+            return;
+          if (parent?.type === "ArrowFunctionExpression" && prop !== "body")
             return;
 
           this.replace(createScopedExpression([node]));
@@ -100,7 +114,7 @@ function createScopedExpression(
     type: "CallExpression",
     callee: {
       type: "Identifier",
-      name: `this.__$ampere.${name}`
+      name: `globalThis.__$ampere.${name}`
     },
     arguments: args,
     optional: false

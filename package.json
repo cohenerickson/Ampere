@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "tsc && tsx ./run.ts",
+    "release": "npm run build && npm publish",
     "dev": "concurrently \"npm run dev:tailwind\" \"npm run dev:esbuild\" \"npm run dev:bare\"",
     "dev:tailwind": "tailwindcss -i ./public/index.css -o ./public/style.css --watch --minify",
     "dev:bare": "bare-server-node --port 8080",
@@ -18,6 +19,7 @@
   },
   "dependencies": {
     "@tomphttp/bare-client": "2.2.0-alpha",
+    "acorn": "^8.11.3",
     "acorn-loose": "^8.4.0",
     "astring": "^1.8.6",
     "css-tree": "^2.3.1",

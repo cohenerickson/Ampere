@@ -27,9 +27,11 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
 
     for (const plugin of this.config.plugins) {
       try {
-        __$ampere.logger.info("Loading plugin", plugin.name);
-        plugin.worker(this);
-        __$ampere.logger.info("Loaded plugin", plugin.name);
+        if (plugin.worker) {
+          __$ampere.logger.info("Loading plugin", plugin.name);
+          plugin.worker(this);
+          __$ampere.logger.info("Loaded plugin", plugin.name);
+        }
       } catch (e) {
         __$ampere.logger.error("Failed to load plugin", plugin.name, "\n", e);
       }
@@ -78,9 +80,7 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     }
 
     // Otherwise we proxy the request to the server
-    const rawProxyURL = this.config.codec.decode(
-      url.pathname.replace(this.config.prefix, "")
-    );
+    const rawProxyURL = __$ampere.unwriteURL(url.pathname);
 
     // error checking on URL
     try {
@@ -95,9 +95,9 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     // request init for outgoing bare request
     const requestInit: RequestInit & { duplex: "half" } = {
       method: event.request.method,
-      headers: event.request.headers,
+      headers: Object.fromEntries(event.request.headers),
       redirect: "manual",
-      // Typescript doesn't believe in duplex but it is required for certain requests (and yes is in the spec)
+      // Typescript doesn't believe in duplex but it's required for certain requests (and yes it's in the spec)
       duplex: "half"
     };
 
@@ -119,7 +119,7 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
 
     // create a request object
     let request = new Request(url, init);
-    const requestHeaders = new Headers(request.headers);
+    const requestHeaders = new Headers(init.headers);
 
     // make headers mutable
     Object.defineProperty(request, "headers", {
@@ -174,7 +174,7 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
       // emit html event
       html = (await this.emit("html", html)) ?? html;
 
-      responseBody = __$ampere.rewriteHTML(html);
+      responseBody = __$ampere.rewriteHTML(html, url);
     } else if (
       bareRequest.headers
         .get("content-type")

@@ -1,4 +1,5 @@
 import { Plugin } from "./plugins";
+import { DisableCSP } from "./plugins/DisableCSP";
 import { none, Codec } from "./util/codec";
 
 export enum LogLevel {
@@ -21,7 +22,7 @@ export const config: Config = {
     worker: "worker.js",
     bundle: "bundle.js"
   },
-  plugins: []
+  plugins: [DisableCSP()]
 };
 
 export type Config = {
