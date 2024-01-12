@@ -19,6 +19,8 @@ export default function document(meta: Document): Document {
             return location(meta.location);
           case "documentURI":
             return location(meta.location).toString();
+          case "baseURI":
+            return __$ampere.base;
           case "cookie":
             // TODO: cookies and storage
             return "";
@@ -55,6 +57,7 @@ export default function document(meta: Document): Document {
         }
       },
       set(target, prop, newValue, receiver) {
+        // TODO: Cookies and storage
         if (prop === "cookie") {
           return true;
         }

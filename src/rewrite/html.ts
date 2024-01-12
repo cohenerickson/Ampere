@@ -1,11 +1,18 @@
-import { getBase } from "../util/parse5";
 import { rewriteCSS } from "./css";
 import { rewriteJS } from "./js";
 import { rewriteSrcSet } from "./srcset";
 import { rewriteURL } from "./url";
-import { traverse } from "@parse5/tools";
+import {
+  traverse,
+  query,
+  getAttribute,
+  removeAttribute,
+  setAttribute,
+  getTextContent,
+  setTextContent,
+  Element
+} from "@parse5/tools";
 import { parse, serialize } from "parse5";
-import { TextNode } from "parse5/dist/tree-adapters/default";
 import { Node } from "parse5/dist/tree-adapters/default";
 
 const JAVASCRIPT_ELEMENTS = ["script"] as const;
@@ -42,7 +49,18 @@ declare global {
 export function rewriteHTML(html: string, meta: string | URL): string {
   const document = parse(html);
 
-  const base = getBase(document, meta);
+  const base = query(document, (node) => node.nodeName === "base") as Element;
+
+  if (base) {
+    const href = getAttribute(base, "href");
+
+    if (href) {
+      meta = new URL(href, meta).toString();
+
+      setAttribute(base, "_href", href);
+      removeAttribute(base, "href");
+    }
+  }
 
   traverse(document, {
     node(node: Node) {
@@ -51,138 +69,128 @@ export function rewriteHTML(html: string, meta: string | URL): string {
 
       // Inline scripts
       if (JAVASCRIPT_ELEMENTS.includes(node.nodeName)) {
-        const type = node.attrs.find((attr) => attr.name === "type");
+        const type = getAttribute(node, "type");
 
         if (
           type &&
           !(
-            type.value.startsWith("application/javascript") ||
-            type.value.startsWith("text/javascript") ||
-            type.value === "module"
+            type.startsWith("application/javascript") ||
+            type.startsWith("text/javascript") ||
+            type === "module"
           )
         )
           return;
 
-        const textNode = node.childNodes[0] as TextNode;
+        const content = getTextContent(node);
 
-        if (textNode) {
-          textNode.value = rewriteJS(textNode.value, meta);
-        }
+        if (content) setTextContent(node, rewriteJS(content, meta));
       }
 
       // Inline styles
       if (CSS_ELEMENTS.includes(node.nodeName)) {
-        const textNode = node.childNodes[0] as TextNode;
+        const content = getTextContent(node);
 
-        if (textNode) {
-          textNode.value = rewriteCSS(textNode.value, meta);
-        }
+        if (content) setTextContent(node, rewriteCSS(content, meta));
       }
 
       // HREF attributes
       if (HREF_ELEMENTS.includes(node.nodeName)) {
-        const href = node.attrs.find((attr) => attr.name === "href");
+        const href = getAttribute(node, "href");
 
         if (href) {
-          href.value = rewriteURL(href.value, meta);
+          setAttribute(node, "href", rewriteURL(href, meta));
         }
       }
 
       // SRC attributes
       if (SRC_ELEMENTS.includes(node.nodeName)) {
-        const src = node.attrs.find((attr) => attr.name === "src");
+        const src = getAttribute(node, "src");
 
         if (src) {
-          src.value = rewriteURL(src.value, meta);
+          setAttribute(node, "src", rewriteURL(src, meta));
         }
       }
 
       // SRCDOC attributes
       if (SRCDOC_ELEMENTS.includes(node.nodeName)) {
-        const srcdoc = node.attrs.find((attr) => attr.name === "srcdoc");
+        const srcdoc = getAttribute(node, "srcdoc");
 
         if (srcdoc) {
-          srcdoc.value = rewriteHTML(srcdoc.value, meta);
+          setAttribute(node, "srcdoc", rewriteHTML(srcdoc, meta));
         }
       }
 
       // SRCSET attributes
       if (SRCSET_ELEMENTS.includes(node.nodeName)) {
-        const srcset = node.attrs.find((attr) => attr.name === "srcset");
+        const srcset = getAttribute(node, "srcset");
 
         if (srcset) {
-          srcset.value = rewriteSrcSet(srcset.value, meta);
+          setAttribute(node, "srcset", rewriteSrcSet(srcset, meta));
         }
       }
 
       // ACTION attributes
       if (ACTION_ELEMENTS.includes(node.nodeName)) {
-        const action = node.attrs.find((attr) => attr.name === "action");
+        const action = getAttribute(node, "action");
 
         if (action) {
-          action.value = rewriteURL(action.value, meta);
+          setAttribute(node, "action", rewriteURL(action, meta));
         }
       }
 
       // POSTER attributes
       if (POSTER_ELEMENTS.includes(node.nodeName)) {
-        const poster = node.attrs.find((attr) => attr.name === "poster");
+        const poster = getAttribute(node, "poster");
 
         if (poster) {
-          poster.value = rewriteURL(poster.value, meta);
+          setAttribute(node, "poster", rewriteURL(poster, meta));
         }
       }
 
       // FORMACTION attributes
       if (FORMACTION_ELEMENTS.includes(node.nodeName)) {
-        const formaction = node.attrs.find(
-          (attr) => attr.name === "formaction"
-        );
+        const formaction = getAttribute(node, "formaction");
 
         if (formaction) {
-          formaction.value = rewriteURL(formaction.value, meta);
+          setAttribute(node, "formaction", rewriteURL(formaction, meta));
         }
       }
 
       // DATA attributes
       if (DATA_ELEMENTS.includes(node.nodeName)) {
-        const data = node.attrs.find((attr) => attr.name === "data");
+        const data = getAttribute(node, "data");
 
         if (data) {
-          data.value = rewriteURL(data.value, meta);
+          setAttribute(node, "data", rewriteURL(data, meta));
         }
       }
 
       // BACKGROUND attributes
       if (BACKGROUND_ELEMENTS.includes(node.nodeName)) {
-        const background = node.attrs.find(
-          (attr) => attr.name === "background"
-        );
+        const background = getAttribute(node, "background");
 
         if (background) {
-          background.value = rewriteURL(background.value, meta);
+          setAttribute(node, "background", rewriteURL(background, meta));
         }
       }
 
       // INTEGRITY attributes
       if (INTEGRITY_ELEMENTS.includes(node.nodeName)) {
-        const integrity = node.attrs.find((attr) => attr.name === "integrity");
+        const integrity = getAttribute(node, "integrity");
 
         if (integrity) {
-          node.attrs = node.attrs.map((attr) =>
-            attr.name === "integrity" ? { ...attr, name: "_integrity" } : attr
-          );
+          setAttribute(node, "_integrity", integrity);
+          removeAttribute(node, "integrity");
         }
       }
 
       // NONCE attributes
       if (NONCE_ELEMENTS.includes(node.nodeName)) {
-        const nonce = node.attrs.find((attr) => attr.name === "nonce");
+        const nonce = getAttribute(node, "nonce");
 
         if (nonce) {
-          node.attrs = node.attrs.map((attr) =>
-            attr.name === "nonce" ? { ...attr, name: "_nonce" } : attr
-          );
+          setAttribute(node, "_nonce", nonce);
+          removeAttribute(node, "nonce");
         }
       }
     }
@@ -194,7 +202,7 @@ export function rewriteHTML(html: string, meta: string | URL): string {
     (/^<!DOCTYPE html>/i.test(html) ? "<!DOCTYPE html>" : "") +
     "<head>" +
     // Inject proxy scripts
-    `  <script>Object.defineProperty(Object.prototype,"__$ampere",{value:Object.assign(globalThis.__$ampere||{},{base:"${base}"}),configurable:false,enumerable:false});</script>` +
+    `  <script>Object.defineProperty(Object.prototype,"__$ampere",{value:Object.assign(globalThis.__$ampere||{},{base:"${meta.toString()}"}),configurable:false,enumerable:false});</script>` +
     `  <script src="${files.directory + files.config}"></script>` +
     `  <script src="${files.directory + files.bundle}"></script>` +
     `  <script src="${files.directory + files.client}"></script>` +
