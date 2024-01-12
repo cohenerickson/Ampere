@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@parse5/tools':
+    specifier: ^0.3.0
+    version: 0.3.0
   '@tomphttp/bare-client':
     specifier: 2.2.0-alpha
     version: 2.2.0-alpha
@@ -49,6 +52,9 @@ devDependencies:
   '@types/node':
     specifier: ^20.10.8
     version: 20.10.8
+  '@types/web-app-manifest':
+    specifier: ^1.0.7
+    version: 1.0.7
   concurrently:
     specifier: ^8.2.2
     version: 8.2.2
@@ -486,6 +492,12 @@ packages:
       fastq: 1.16.0
     dev: true
 
+  /@parse5/tools@0.3.0:
+    resolution: {integrity: sha512-zxRyTHkqb7WQMV8kTNBKWb1BeOFUKXBXTBWuxg9H9hfvQB3IwP6Iw2U75Ia5eyRxPNltmY7E8YAlz6zWwUnjKg==}
+    dependencies:
+      parse5: 7.1.2
+    dev: false
+
   /@pkgjs/parseargs@0.11.0:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
@@ -550,6 +562,10 @@ packages:
     resolution: {integrity: sha512-f8nQs3cLxbAFc00vEU59yf9UyGUftkPaLGfvbVOIDdx2i1b8epBqj2aNGyP19fiyXWvlmZ7qC1XLjAzw/OKIeA==}
     dependencies:
       undici-types: 5.26.5
+    dev: true
+
+  /@types/web-app-manifest@1.0.7:
+    resolution: {integrity: sha512-IRgwSzFEy2Er1C2fKAHWmeWN2DTif4Uqrn0FXyLyCNRODKQWzxiCc1FlQe3yVn3qLl/XmYXsPIYQCT1mfpONDg==}
     dev: true
 
   /acorn-loose@8.4.0:

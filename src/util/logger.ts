@@ -3,19 +3,16 @@ export const logger = {
     if (level <= globalThis.__$ampere.config.logLevel) {
       switch (level) {
         case 1:
-          console.error(...args);
+          console.log("\x1B[35m[Ampere] \x1B[31mERROR:", ...args);
           break;
         case 2:
-          console.warn(...args);
+          console.log("\x1B[35m[Ampere] \x1B[33mWARN:", ...args);
           break;
         case 3:
-          console.info(...args);
+          console.log("\x1B[35m[Ampere] \x1B[32mINFO:", ...args);
           break;
         case 4:
-          console.debug(...args);
-          break;
-        default:
-          console.log(...args);
+          console.log("\x1B[35m[Ampere] \x1B[34mDEBUG:", ...args);
           break;
       }
     }

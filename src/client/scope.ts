@@ -1,3 +1,7 @@
+import document from "./api/document";
+import location from "./api/location";
+import window from "./api/window";
+
 export function scope(value: any): any {
   if (!value) return value;
 
@@ -17,13 +21,15 @@ export function scope(value: any): any {
 
   switch (type || functionName) {
     case "Window":
-      break;
+      return window(value);
     case "Location":
-      break;
+      return location(value);
     case "History":
       break;
     case "Storage":
       break;
+    case "HTMLDocument":
+      return document(value);
     case "postMessage":
       break;
     case "eval":

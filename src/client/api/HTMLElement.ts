@@ -1,3 +1,5 @@
+import { unwriteURL } from "../../rewrite/unwriteURL";
+
 const ATTRIBUTE_FUNCTIONS = [
   "getAttribute",
   "setAttribute",
@@ -49,16 +51,29 @@ export const attributes = Object.fromEntries(
   [key in (typeof ATTRIBUTE_FUNCTIONS)[number]]: PropertyDescriptor["value"];
 };
 
+const INNER_HTML = Object.getOwnPropertyDescriptor(
+  Element.prototype,
+  "innerHTML"
+);
+
 Object.defineProperties(Element.prototype, {
+  innerHTML: {
+    get() {
+      return INNER_HTML?.get?.call(this);
+    },
+    set(value: string) {
+      return INNER_HTML?.set?.call(
+        this,
+        __$ampere.rewriteHTML(value, __$ampere.base)
+      );
+    }
+  },
   getAttribute: {
     value: function (attribute: string) {
-      if (/^_?ampere::/.test(attribute)) {
+      if (/^_/.test(attribute)) {
         return attributes.getAttribute.call(this, `_${attribute}`);
-      } else if (
-        attribute !== "internal" &&
-        attributes.hasAttribute.call(this, `ampere::${attribute}`)
-      ) {
-        return attributes.getAttribute.call(this, `ampere::${attribute}`);
+      } else if (attributes.hasAttribute.call(this, `_${attribute}`)) {
+        return attributes.getAttribute.call(this, `_${attribute}`);
       }
       return attributes.getAttribute.call(this, attribute);
     }
@@ -71,7 +86,7 @@ Object.defineProperties(Element.prototype, {
           attribute,
           __$ampere.rewriteJS(value, __$ampere.base)
         );
-      } else if (/^_?ampere::/.test(attribute)) {
+      } else if (/^_/.test(attribute)) {
         return attributes.setAttribute.call(this, `_${attribute}`, value);
       }
       return attributes.setAttribute.call(this, attribute, value);
@@ -79,12 +94,9 @@ Object.defineProperties(Element.prototype, {
   },
   hasAttribute: {
     value: function (attribute: string) {
-      if (/^_?ampere::/.test(attribute)) {
+      if (/^_/.test(attribute)) {
         return attributes.hasAttribute.call(this, `_${attribute}`);
-      } else if (
-        attribute !== "internal" &&
-        attributes.hasAttribute.call(this, `ampere::${attribute}`)
-      ) {
+      } else if (attributes.hasAttribute.call(this, `_${attribute}`)) {
         return true;
       } else {
         return attributes.hasAttribute.call(this, attribute);
@@ -93,34 +105,25 @@ Object.defineProperties(Element.prototype, {
   },
   removeAttribute: {
     value: function (attribute: string) {
-      if (/^_?ampere::/.test(attribute)) {
+      if (/^_/.test(attribute)) {
         return attributes.removeAttribute.call(this, `_${attribute}`);
-      } else if (
-        attribute !== "internal" &&
-        attributes.hasAttribute.call(this, `ampere::${attribute}`)
-      ) {
-        return attributes.removeAttribute.call(this, `ampere::${attribute}`);
+      } else if (attributes.hasAttribute.call(this, `_${attribute}`)) {
+        return attributes.removeAttribute.call(this, `_${attribute}`);
       }
       return attributes.removeAttribute.call(this, attribute);
     }
   },
   getAttributeNode: {
     value: function (attribute: string) {
-      if (/^_?ampere::/.test(attribute)) {
+      if (/^_/.test(attribute)) {
         return attributes.getAttributeNode.call(this, `_${attribute}`);
-      } else if (
-        attribute !== "internal" &&
-        attributes.hasAttribute.call(this, `ampere::${attribute}`)
-      ) {
-        const attr = attributes.getAttributeNode.call(
-          this,
-          `ampere::${attribute}`
-        );
+      } else if (attributes.hasAttribute.call(this, `_${attribute}`)) {
+        const attr = attributes.getAttributeNode.call(this, `_${attribute}`);
         if (!attr) return null;
         return new Proxy(attr, {
           get: function (target, prop: keyof Attr) {
             if (["name", "localName", "nodeName"].includes(prop)) {
-              return target.name.replace(/^ampere::/, "");
+              return target.name.replace(/^_/, "");
             }
             return target[prop];
           }
@@ -137,7 +140,7 @@ Object.defineProperties(Element.prototype, {
           attribute.name,
           __$ampere.rewriteJS(attribute.value, __$ampere.base)
         );
-      } else if (/^_?ampere::/.test(attribute.name)) {
+      } else if (/^_/.test(attribute.name)) {
         return attributes.setAttribute.call(
           this,
           `_${attribute}`,
@@ -149,17 +152,11 @@ Object.defineProperties(Element.prototype, {
   },
   removeAttributeNode: {
     value: function (attribute: Attr) {
-      if (/^_?ampere::/.test(attribute.name)) {
+      if (/^_/.test(attribute.name)) {
         return attributes.removeAttribute.call(this, `_${attribute.name}`);
-      } else if (
-        attribute.name !== "internal" &&
-        attributes.hasAttribute.call(this, `ampere::${attribute.name}`)
-      ) {
+      } else if (attributes.hasAttribute.call(this, `_${attribute.name}`)) {
         attributes.removeAttribute.call(this, attribute.name);
-        return attributes.removeAttribute.call(
-          this,
-          `ampere::${attribute.name}`
-        );
+        return attributes.removeAttribute.call(this, `_${attribute.name}`);
       }
       return attributes.removeAttributeNode.call(this, attribute);
     }
@@ -167,23 +164,15 @@ Object.defineProperties(Element.prototype, {
   getAttributeNames: {
     value: function () {
       let attributeNames = attributes.getAttributeNames.call(this) as string[];
-      attributeNames.filter(
-        (attribute) => !/^ampere::internal$/.test(attribute)
-      );
       attributeNames = attributeNames.map((attribute) => {
-        if (/^_?ampere::/.test(attribute)) {
-          return attribute.replace(/^_?ampere::/, "");
+        if (/^_/.test(attribute)) {
+          return attribute.replace(/^_/, "");
         }
         return attribute;
       });
       return Array.from(new Set(attributeNames));
     }
   }
-});
-
-ATTRIBUTE_FUNCTIONS.forEach((ATTRIBUTE_FUNCTION) => {
-  Element.prototype[ATTRIBUTE_FUNCTION].prototype.toString = (): string =>
-    `function ${ATTRIBUTE_FUNCTION}() { [native code] }`;
 });
 
 Object.entries(ATTRIBUTE_REWRITES).forEach(([property, elements]) => {
@@ -194,35 +183,25 @@ Object.entries(ATTRIBUTE_REWRITES).forEach(([property, elements]) => {
     Object.defineProperty(element.prototype, property, {
       get() {
         if (property === "href" || property === "src") {
-          return new URL(this.getAttribute(property), __$ampere.base as any)
-            .href;
+          return unwriteURL(this.getAttribute(property));
         }
         return get.call(this);
       },
       set(value) {
         if (property === "href" || property === "src") {
-          attributes.setAttribute.call(this, `ampere::${property}`, value);
           return this.setAttribute(
             property,
             __$ampere.rewriteURL(value, __$ampere.base)
           );
-        } else if (property === "nonce" || property === "integrity") {
-          return attributes.setAttribute.call(
-            this,
-            `ampere::${property}`,
-            value
-          );
+        } else if (property === "integrity") {
+          return attributes.setAttribute.call(this, `_${property}`, value);
         } else if (property === "srcdoc") {
           attributes.setAttribute.call(
             this,
             `srcdoc`,
             __$ampere.rewriteHTML(value, __$ampere.base)
           );
-          return attributes.setAttribute.call(
-            this,
-            `ampere::${property}`,
-            value
-          );
+          return attributes.setAttribute.call(this, `_${property}`, value);
         }
         return set.call(this, value);
       }

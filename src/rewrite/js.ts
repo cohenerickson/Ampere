@@ -11,6 +11,7 @@ const GLOBAL_VARS = [
   "top",
   "parent",
   "opener",
+  "document",
   "eval",
   "self",
   "this",
@@ -20,7 +21,7 @@ const GLOBAL_VARS = [
   "postMessage"
 ];
 
-export function rewriteJS(js: string, scope: string | URL): string {
+export function rewriteJS(js: string, meta: string | URL): string {
   // error-tolerant parsing configuration
   const acornConfig: Options = {
     sourceType: "module",
@@ -49,7 +50,7 @@ export function rewriteJS(js: string, scope: string | URL): string {
       if (node.type === "ImportDeclaration") {
         // rewrite static imports now
         if (typeof node.source.value === "string") {
-          node.source.value = rewriteURL(node.source.value, scope);
+          node.source.value = rewriteURL(node.source.value, meta);
         }
       } else if (node.type === "ImportExpression") {
         // rewrite dynamic imports during runtime

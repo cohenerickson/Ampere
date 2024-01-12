@@ -16,10 +16,9 @@ const baseConfig: BuildOptions = {
   bundle: true,
   format: "iife",
   legalComments: "eof",
-  sourcemap: true,
   plugins: [
     clean({
-      patterns: ["./dist/*", "!./dist/index.d.ts"]
+      patterns: ["./dist/*"]
     })
   ],
   entryPoints: {
@@ -28,16 +27,18 @@ const baseConfig: BuildOptions = {
     [getFileName(config.files.worker)]: "./src/worker.ts",
     [getFileName(config.files.bundle)]: "./src/bundle.ts"
   },
-  outdir: "./dist/",
-  metafile: true
+  outdir: "./dist/"
 };
 
 if (isDev) {
   // start dev server
-  const server = createServer(baseConfig, {
-    static: "./public/",
-    port: process.env.PORT ? parseInt(process.env.PORT) : 3000
-  });
+  const server = createServer(
+    { ...baseConfig, sourcemap: true },
+    {
+      static: "./public/",
+      port: process.env.PORT ? parseInt(process.env.PORT) : 3000
+    }
+  );
 
   await server.start();
 

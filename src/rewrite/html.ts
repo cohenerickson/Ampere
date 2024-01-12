@@ -1,10 +1,12 @@
-import { getBase, walk } from "../util/parse5";
+import { getBase } from "../util/parse5";
 import { rewriteCSS } from "./css";
 import { rewriteJS } from "./js";
 import { rewriteSrcSet } from "./srcset";
 import { rewriteURL } from "./url";
+import { traverse } from "@parse5/tools";
 import { parse, serialize } from "parse5";
 import { TextNode } from "parse5/dist/tree-adapters/default";
+import { Node } from "parse5/dist/tree-adapters/default";
 
 const JAVASCRIPT_ELEMENTS = ["script"] as const;
 const CSS_ELEMENTS = ["style"] as const;
@@ -37,22 +39,34 @@ declare global {
   }
 }
 
-export function rewriteHTML(html: string, scope: string | URL): string {
+export function rewriteHTML(html: string, meta: string | URL): string {
   const document = parse(html);
 
-  const base = getBase(document, scope);
+  const base = getBase(document, meta);
 
-  walk(document, {
-    leave(node) {
+  traverse(document, {
+    node(node: Node) {
       // Fix weak native typing of .includes
       if (!("attrs" in node)) return;
 
       // Inline scripts
       if (JAVASCRIPT_ELEMENTS.includes(node.nodeName)) {
+        const type = node.attrs.find((attr) => attr.name === "type");
+
+        if (
+          type &&
+          !(
+            type.value.startsWith("application/javascript") ||
+            type.value.startsWith("text/javascript") ||
+            type.value === "module"
+          )
+        )
+          return;
+
         const textNode = node.childNodes[0] as TextNode;
 
         if (textNode) {
-          textNode.value = rewriteJS(textNode.value, scope);
+          textNode.value = rewriteJS(textNode.value, meta);
         }
       }
 
@@ -61,7 +75,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const textNode = node.childNodes[0] as TextNode;
 
         if (textNode) {
-          textNode.value = rewriteCSS(textNode.value, scope);
+          textNode.value = rewriteCSS(textNode.value, meta);
         }
       }
 
@@ -70,7 +84,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const href = node.attrs.find((attr) => attr.name === "href");
 
         if (href) {
-          href.value = rewriteURL(href.value, scope);
+          href.value = rewriteURL(href.value, meta);
         }
       }
 
@@ -79,13 +93,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const src = node.attrs.find((attr) => attr.name === "src");
 
         if (src) {
-          src.value = rewriteURL(src.value, scope);
-        } else {
-          const textNode = node.childNodes[0] as TextNode;
-
-          if (textNode) {
-            textNode.value = rewriteJS(textNode.value, scope);
-          }
+          src.value = rewriteURL(src.value, meta);
         }
       }
 
@@ -94,7 +102,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const srcdoc = node.attrs.find((attr) => attr.name === "srcdoc");
 
         if (srcdoc) {
-          srcdoc.value = rewriteHTML(srcdoc.value, scope);
+          srcdoc.value = rewriteHTML(srcdoc.value, meta);
         }
       }
 
@@ -103,7 +111,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const srcset = node.attrs.find((attr) => attr.name === "srcset");
 
         if (srcset) {
-          srcset.value = rewriteSrcSet(srcset.value, scope);
+          srcset.value = rewriteSrcSet(srcset.value, meta);
         }
       }
 
@@ -112,7 +120,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const action = node.attrs.find((attr) => attr.name === "action");
 
         if (action) {
-          action.value = rewriteURL(action.value, scope);
+          action.value = rewriteURL(action.value, meta);
         }
       }
 
@@ -121,7 +129,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const poster = node.attrs.find((attr) => attr.name === "poster");
 
         if (poster) {
-          poster.value = rewriteURL(poster.value, scope);
+          poster.value = rewriteURL(poster.value, meta);
         }
       }
 
@@ -132,7 +140,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         );
 
         if (formaction) {
-          formaction.value = rewriteURL(formaction.value, scope);
+          formaction.value = rewriteURL(formaction.value, meta);
         }
       }
 
@@ -141,7 +149,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         const data = node.attrs.find((attr) => attr.name === "data");
 
         if (data) {
-          data.value = rewriteURL(data.value, scope);
+          data.value = rewriteURL(data.value, meta);
         }
       }
 
@@ -152,7 +160,7 @@ export function rewriteHTML(html: string, scope: string | URL): string {
         );
 
         if (background) {
-          background.value = rewriteURL(background.value, scope);
+          background.value = rewriteURL(background.value, meta);
         }
       }
 
@@ -162,17 +170,21 @@ export function rewriteHTML(html: string, scope: string | URL): string {
 
         if (integrity) {
           node.attrs = node.attrs.map((attr) =>
-            attr.name === "integrity" ? { ...attr, name: "integrity" } : attr
+            attr.name === "integrity" ? { ...attr, name: "_integrity" } : attr
           );
         }
       }
 
-      //   // NONCE attributes
-      //   if (NONCE_ELEMENTS.includes(node.nodeName)) {
-      //     node.attrs = node.attrs.filter((attr) => attr.name !== "nonce");
+      // NONCE attributes
+      if (NONCE_ELEMENTS.includes(node.nodeName)) {
+        const nonce = node.attrs.find((attr) => attr.name === "nonce");
 
-      //     // TODO: some CSP shit
-      //   }
+        if (nonce) {
+          node.attrs = node.attrs.map((attr) =>
+            attr.name === "nonce" ? { ...attr, name: "_nonce" } : attr
+          );
+        }
+      }
     }
   });
 

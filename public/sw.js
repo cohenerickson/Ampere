@@ -1,4 +1,5 @@
-importScripts("/ampere/bundle.js", "/ampere/config.js");
+importScripts("/ampere/config.js");
+importScripts("/ampere/bundle.js");
 importScripts("/ampere/worker.js");
 
 const ampere = new AmpereWorker();

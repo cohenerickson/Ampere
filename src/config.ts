@@ -1,6 +1,6 @@
 import { Plugin } from "./plugins";
 import { DisableCSP } from "./plugins/DisableCSP";
-import { none, Codec } from "./util/codec";
+import { uri, Codec } from "./util/codec";
 
 export enum LogLevel {
   None,
@@ -13,8 +13,8 @@ export enum LogLevel {
 export const config: Config = {
   prefix: "/~/",
   server: "http://localhost:8080/",
-  logLevel: LogLevel.Info,
-  codec: none,
+  logLevel: LogLevel.Debug,
+  codec: uri,
   files: {
     directory: "/ampere/",
     config: "config.js",

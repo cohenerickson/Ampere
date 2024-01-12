@@ -7,8 +7,9 @@ export function DisableCSP(): Plugin {
     description:
       "Deletes the Content-Security-Policy header. (Full CSP support is planned, this simply bypasses any issues that may occur for now)",
     worker(worker) {
-      worker.on("response", (request) => {
-        request.headers.delete("content-security-policy");
+      worker.on("response", (res) => {
+        res.headers.delete("content-security-policy");
+        res.headers.delete("content-security-policy-report-only");
       });
     }
   };

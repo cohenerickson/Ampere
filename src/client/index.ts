@@ -1,4 +1,7 @@
 import "./api/HTMLElement";
+import "./api/history";
+import "./api/navigator";
+import "./api/network";
 import "./pluginLoader";
 import { scope } from "./scope";
 

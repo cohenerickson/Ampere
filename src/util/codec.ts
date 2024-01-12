@@ -6,11 +6,6 @@ export type Codec = {
   decode: (value: string) => string;
 };
 
-export const none: Codec = {
-  encode: (value: string) => value,
-  decode: (value: string) => value
-};
-
 export const uri: Codec = {
   encode: (value: string) => encodeURIComponent(value),
   decode: (value: string) => decodeURIComponent(value)

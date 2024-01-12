@@ -6,9 +6,10 @@ import { BareClient } from "@tomphttp/bare-client";
 interface SWEvents {
   request: (req: Request) => Request | Promise<Request | void> | void;
   response: (res: Response) => Promise<void> | void;
-  js: (js: string) => string | Promise<string | void> | void;
-  css: (css: string) => string | Promise<string | void> | void;
   html: (html: string) => string | Promise<string | void> | void;
+  css: (css: string) => string | Promise<string | void> | void;
+  js: (js: string) => string | Promise<string | void> | void;
+  manifest: (manifest: string) => string | Promise<string | void> | void;
 }
 
 declare var self: ServiceWorkerGlobalScope & {
@@ -37,18 +38,8 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
       }
     }
 
-    // create new bare client
     // TODO: connect to server with lowest latency
-    this.bare = new BareClient(
-      new URL(
-        Array.isArray(this.config.server)
-          ? this.config.server[
-              Math.floor(Math.random() * this.config.server.length)
-            ]
-          : this.config.server,
-        location.origin
-      )
-    );
+    this.bare = __$ampere.bareClient;
 
     // For now we just resolve immediately
     // eventually we will need to open IDB connections and such
@@ -80,7 +71,25 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     }
 
     // Otherwise we proxy the request to the server
-    const rawProxyURL = __$ampere.unwriteURL(url.pathname);
+    const rawProxyURL =
+      __$ampere.unwriteURL(url.pathname) + url.search + url.hash;
+
+    // If the URL contains a hash or search (non-encoded data) we redirect to the encoded URL
+    if (url.search || url.hash) {
+      __$ampere.logger.debug(
+        "Detected non-encoded data in URL, redirecting from",
+        url.href,
+        "to",
+        __$ampere.rewriteURL(rawProxyURL, url)
+      );
+
+      return new Response(null, {
+        status: 301,
+        headers: {
+          location: __$ampere.rewriteURL(rawProxyURL, url)
+        }
+      });
+    }
 
     // error checking on URL
     try {
@@ -135,7 +144,11 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     const bareRequest = await this.bare.fetch(request);
 
     // handle redirects
-    if (bareRequest.status === 301 && bareRequest.headers.has("location")) {
+    if (
+      bareRequest.status >= 300 &&
+      bareRequest.status < 400 &&
+      bareRequest.headers.has("location")
+    ) {
       __$ampere.logger.debug(
         "Redirecting from",
         url.href,
@@ -203,6 +216,13 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
       css = (await this.emit("css", css)) ?? css;
 
       responseBody = __$ampere.rewriteCSS(css, url);
+    } else if (event.request.destination === "manifest") {
+      let manifest = await bareRequest.text();
+
+      // emit manifest event
+      manifest = (await this.emit("manifest", manifest)) ?? manifest;
+
+      responseBody = __$ampere.rewriteManifest(manifest, url);
     } else {
       __$ampere.logger.info("Returning binary for", url.href);
       responseBody = bareRequest.body;
