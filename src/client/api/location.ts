@@ -15,7 +15,7 @@ export default function location(meta: Location): Location {
         let loc = new URL(meta.href);
         if (meta.href === "about:srcdoc" || meta.href === "about:blank") {
           loc = new URL(__$ampere.unwriteURL(parent.location.pathname));
-        } else if (meta.href.startsWith(__$ampere.config.prefix)) {
+        } else if (meta.pathname.startsWith(__$ampere.config.prefix)) {
           loc = new URL(__$ampere.unwriteURL(meta.pathname));
         }
 
