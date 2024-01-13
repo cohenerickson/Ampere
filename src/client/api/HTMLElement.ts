@@ -1,3 +1,4 @@
+// TODO: contentWindow and contentDocument
 import { unwriteURL } from "../../rewrite/unwriteURL";
 
 const ATTRIBUTE_FUNCTIONS = [
@@ -55,17 +56,53 @@ const INNER_HTML = Object.getOwnPropertyDescriptor(
   Element.prototype,
   "innerHTML"
 );
+const INNER_TEXT = Object.getOwnPropertyDescriptor(
+  Element.prototype,
+  "innerText"
+);
 
 Object.defineProperties(Element.prototype, {
   innerHTML: {
+    set(value: string) {
+      if (this instanceof HTMLScriptElement) {
+        return INNER_HTML?.set?.call(
+          this,
+          __$ampere.rewriteJS(value, __$ampere.base)
+        );
+      } else if (this instanceof HTMLStyleElement) {
+        return INNER_HTML?.set?.call(
+          this,
+          __$ampere.rewriteCSS(value, __$ampere.base)
+        );
+      } else {
+        return INNER_HTML?.set?.call(
+          this,
+          __$ampere.rewriteHTML(value, __$ampere.base)
+        );
+      }
+    },
     get() {
       return INNER_HTML?.get?.call(this);
+    }
+  },
+  innerText: {
+    set: function (value: string) {
+      if (this instanceof HTMLScriptElement) {
+        return INNER_TEXT?.set?.call(
+          this,
+          __$ampere.rewriteJS(value, __$ampere.base)
+        );
+      } else if (this instanceof HTMLStyleElement) {
+        return INNER_TEXT?.set?.call(
+          this,
+          __$ampere.rewriteCSS(value, __$ampere.base)
+        );
+      } else {
+        return INNER_TEXT?.set?.call(this, value);
+      }
     },
-    set(value: string) {
-      return INNER_HTML?.set?.call(
-        this,
-        __$ampere.rewriteHTML(value, __$ampere.base)
-      );
+    get: function () {
+      return INNER_TEXT?.get?.call(this);
     }
   },
   getAttribute: {
