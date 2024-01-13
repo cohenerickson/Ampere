@@ -1,4 +1,3 @@
-import { isFunction } from "../../util/isFunction";
 import document from "./document";
 import location from "./location";
 
@@ -43,8 +42,15 @@ export default function window(
           default:
             const value = meta[prop as keyof Window];
 
-            if (isFunction(value)) {
-              return value.bind(meta);
+            if (
+              typeof value == "function" &&
+              value.toString == self.Object.toString
+            ) {
+              return new Proxy(value, {
+                apply(t, g, a) {
+                  return Reflect.apply(t, meta, a);
+                }
+              });
             } else {
               return value;
             }

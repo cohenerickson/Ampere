@@ -1,5 +1,4 @@
 import { unwriteURL } from "../../rewrite/unwriteURL";
-import { isFunction } from "../../util/isFunction";
 import location from "./location";
 
 const backup = new Map<Document, Document>();
@@ -49,8 +48,15 @@ export default function document(meta: Document): Document {
           default:
             const value = meta[prop as keyof Document];
 
-            if (value && isFunction(value)) {
-              return (value as Function).bind(meta);
+            if (
+              typeof value == "function" &&
+              value.toString == self.Object.toString
+            ) {
+              return new Proxy(value, {
+                apply(t, g, a) {
+                  return Reflect.apply(t, meta, a);
+                }
+              });
             } else {
               return value;
             }
