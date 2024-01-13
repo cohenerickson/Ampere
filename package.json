@@ -18,7 +18,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@parse5/tools": "^0.3.0",
+    "@parse5/tools": "github:cohenerickson/parse5-tools",
     "@tomphttp/bare-client": "2.2.0-alpha",
     "acorn": "^8.11.3",
     "acorn-loose": "^8.4.0",

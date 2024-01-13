@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@parse5/tools':
-    specifier: ^0.3.0
-    version: 0.3.0
+    specifier: github:cohenerickson/parse5-tools
+    version: github.com/cohenerickson/parse5-tools/a1b113828e6364aacee8986c9b1784100f163533
   '@tomphttp/bare-client':
     specifier: 2.2.0-alpha
     version: 2.2.0-alpha
@@ -491,12 +491,6 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.16.0
     dev: true
-
-  /@parse5/tools@0.3.0:
-    resolution: {integrity: sha512-zxRyTHkqb7WQMV8kTNBKWb1BeOFUKXBXTBWuxg9H9hfvQB3IwP6Iw2U75Ia5eyRxPNltmY7E8YAlz6zWwUnjKg==}
-    dependencies:
-      parse5: 7.1.2
-    dev: false
 
   /@pkgjs/parseargs@0.11.0:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1805,3 +1799,13 @@ packages:
       y18n: 5.0.8
       yargs-parser: 21.1.1
     dev: true
+
+  github.com/cohenerickson/parse5-tools/a1b113828e6364aacee8986c9b1784100f163533:
+    resolution: {tarball: https://codeload.github.com/cohenerickson/parse5-tools/tar.gz/a1b113828e6364aacee8986c9b1784100f163533}
+    name: '@parse5/tools'
+    version: 0.3.0
+    prepare: true
+    requiresBuild: true
+    dependencies:
+      parse5: 7.1.2
+    dev: false

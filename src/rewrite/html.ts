@@ -201,6 +201,11 @@ export function rewriteHTML(html: string, meta: string | URL): string {
     // Handle quirks mode
     (/^<!DOCTYPE html>/i.test(html) ? "<!DOCTYPE html>" : "") +
     "<head>" +
+    // Default favicon
+    `  <link rel="icon" href="${__$ampere.rewriteURL(
+      "/favicon.ico",
+      meta
+    )}" />` +
     // Inject proxy scripts
     `  <script>Object.defineProperty(Object.prototype,"__$ampere",{value:Object.assign(globalThis.__$ampere||{},{base:"${meta.toString()}"}),configurable:false,enumerable:false});</script>` +
     `  <script src="${files.directory + files.config}"></script>` +
