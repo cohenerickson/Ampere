@@ -35,21 +35,89 @@ window.XMLHttpRequest.prototype.open = new Proxy(
   }
 );
 
-// window.WebSocket = new Proxy(window.WebSocket, {
-//   async construct(target, args) {
-//     const ws = __$ampere.bareClient.createWebSocket(args[0], args[1], {
-//       setCookiesCallback(setCookies) {
-//         for (const cookie of setCookies) {
-//           document.cookie = cookie;
-//         }
-//       }
-//     });
+window.WebSocket = new Proxy(window.WebSocket, {
+  construct(target, args) {
+    const ws = new target(
+      `${location.protocol.replace("http", "ws")}//${
+        new URL(__$ampere.bare).host
+      }/v3/`
+    );
+    let readyState = 0;
 
-//     console.log(ws);
+    const READY_STATE = Object.getOwnPropertyDescriptor(
+      WebSocket.prototype,
+      "readyState"
+    )?.get;
 
-//     return ws;
-//   }
-// });
+    Object.defineProperty(ws, "readyState", {
+      get() {
+        if (readyState === 0) {
+          return 0;
+        } else {
+          return READY_STATE?.call(ws);
+        }
+      }
+    });
+
+    function message(event: MessageEvent) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const message = JSON.parse(event.data);
+
+      if (message.type === "open") {
+        message.setCookies.forEach((cookie: string) => {
+          __$ampere.scope(document).cookie = cookie;
+        });
+
+        Object.defineProperties(ws, {
+          protocol: {
+            value: message.protocol
+          },
+          url: {
+            value: args[0]
+          }
+        });
+
+        readyState = 1;
+
+        ws.dispatchEvent(new Event("open"));
+      } else {
+        ws.close();
+      }
+    }
+
+    ws.addEventListener("message", message, { once: true });
+
+    function open(event: Event) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      ws.send(
+        JSON.stringify({
+          type: "connect",
+          remote: args[0],
+          protocols: args[1] ? [args[1]].flat() : [],
+          headers: {
+            "Cache-Control": "no-cache",
+            Connection: "Upgrade",
+            Host: new URL(args[0]).host,
+            Origin: __$ampere.scope(location).origin,
+            Pragma: "no-cache",
+            Upgrade: "websocket",
+            "User-Agent": navigator.userAgent,
+            Cookie: __$ampere.scope(document).cookie
+          },
+          forwardHeaders: []
+        })
+      );
+    }
+
+    ws.addEventListener("open", open, { once: true });
+
+    return ws;
+  }
+});
 
 window.Request = new Proxy(Request, {
   construct(target, args) {
