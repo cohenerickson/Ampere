@@ -8,16 +8,23 @@ import { rewriteURL } from "./rewrite/url";
 import { logger } from "./util/logger";
 import { BareClient } from "@tomphttp/bare-client";
 
-const bareClient: BareClient = new BareClient(
-  new URL(
-    Array.isArray(__$ampere.config.server)
-      ? __$ampere.config.server[
-          Math.floor(Math.random() * __$ampere.config.server.length)
-        ]
-      : __$ampere.config.server,
-    location.origin
-  )
-);
+
+// TODO: pick bare server with lowest latency
+let bareClient: BareClient;
+const bare: string = Array.isArray(__$ampere.config.server)
+  ? new URL(
+      __$ampere.config.server[
+        Math.floor(Math.random() * __$ampere.config.server.length)
+      ],
+      location.origin
+    ).href
+  : new URL(__$ampere.config.server, location.origin).href;
+
+if (Array.isArray(__$ampere.config.server)) {
+  bareClient = new BareClient(bare);
+} else {
+  bareClient = new BareClient(bare);
+}
 
 export const bundle = {
   rewriteCSS,
@@ -28,7 +35,8 @@ export const bundle = {
   unwriteURL,
   rewriteManifest,
   logger,
-  bareClient
+  bareClient,
+  bare
 };
 
 Object.defineProperty(Object.prototype, "__$ampere", {
