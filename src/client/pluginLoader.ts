@@ -6,6 +6,6 @@ for (const plugin of __$ampere.config.plugins) {
       __$ampere.logger.info("Loaded plugin", plugin.name);
     }
   } catch (e) {
-    __$ampere.logger.error("Failed to load plugin", plugin.name, "\n", e);
+    __$ampere.logger.error("Failed to load plugin", plugin.name, e);
   }
 }

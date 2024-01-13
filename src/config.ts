@@ -10,6 +10,9 @@ export enum LogLevel {
   Debug
 }
 
+// Limitations in ESBuild tree shaking cause this file to include all codecs,
+// I would reccomend manually creating a config file for production use rather
+// than using the built in one.
 export const config: Config = {
   prefix: "/~/",
   server: "http://localhost:8080/",
@@ -27,6 +30,9 @@ export const config: Config = {
 
 export type Config = {
   prefix: `/${string}/` | "/";
+  /**
+   * Note: A bare server must support version 3
+  */
   server: (string | URL) | (string | URL)[];
   logLevel: LogLevel;
   codec: Codec;

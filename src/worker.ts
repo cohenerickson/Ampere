@@ -1,7 +1,6 @@
 /// <reference lib="webworker" />
 import { Config } from "./config";
 import { TypedEmitter } from "./util/TypedEmitter";
-import { BareClient } from "@tomphttp/bare-client";
 
 interface SWEvents {
   request: (req: Request) => Request | Promise<Request | void> | void;
@@ -18,7 +17,6 @@ declare var self: ServiceWorkerGlobalScope & {
 
 export class AmpereWorker extends TypedEmitter<SWEvents> {
   ready: Promise<void>;
-  bare: BareClient;
   config: Config;
 
   constructor() {
@@ -34,12 +32,9 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
           __$ampere.logger.info("Loaded plugin", plugin.name);
         }
       } catch (e) {
-        __$ampere.logger.error("Failed to load plugin", plugin.name, "\n", e);
+        __$ampere.logger.error("Failed to load plugin", plugin.name, e);
       }
     }
-
-    // TODO: connect to server with lowest latency
-    this.bare = __$ampere.bareClient;
 
     // For now we just resolve immediately
     // eventually we will need to open IDB connections and such
@@ -75,6 +70,8 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
       __$ampere.unwriteURL(url.pathname) + url.search + url.hash;
 
     // If the URL contains a hash or search (non-encoded data) we redirect to the encoded URL
+    // BUG: This may cause POST requests to be redirected to GET requests from form submits
+    // Either handle form submits on the client or allow non-encoded data in the URL
     if (url.search || url.hash) {
       __$ampere.logger.debug(
         "Detected non-encoded data in URL, redirecting from",
@@ -141,7 +138,10 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     request = (await this.emit("request", request)) ?? request;
 
     // make a request to the server
-    const bareRequest = await this.bare.fetch(request);
+    const bareRequest = await __$ampere.bareClient.fetch(request, {
+      // @ts-ignore Request objects don't have duplex property for some reason
+      duplex: "half"
+    });
 
     // handle redirects
     if (
