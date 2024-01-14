@@ -36,6 +36,32 @@ app.listen(3000);
 
 Ampere has a basic configuration file just like many other proxies, it allows for the modification of the prefix, server, file locations, encoding, and more.
 
+```ts
+const config: Config = {
+  prefix: "/~/",
+  server: "https://tomp.app/",
+  logLevel: 0,
+  codec: {
+    encode: (value: string) => btoa(value),
+    decode: (value: string) => atob(value)
+  },
+  files: {
+    directory: "/ampere/",
+    config: "config.js",
+    client: "client.js",
+    worker: "worker.js",
+    bundle: "bundle.js"
+  },
+  plugins: []
+};
+
+Object.defineProperty(Object.prototype, "__$ampere", {
+  value: Object.assign(globalThis.__$ampere || {}, { config }),
+  configurable: false,
+  enumerable: false
+});
+```
+
 > [!IMPORTANT]  
 > **ALL** config files must include this code at the bottom, without it Ampere won't be able to detect your config.
 >
@@ -102,6 +128,7 @@ const plugin: Plugin = {
 
 > [!NOTE]  
 > Pre-post rewriting events without the prefix will default to pre-rewriting events
+>
 > Example: An event with the name of `js` will be handled as if it were `pre:js`
 
 ### Extending AmpereWorker
