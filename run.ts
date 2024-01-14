@@ -27,7 +27,8 @@ const baseConfig: BuildOptions = {
     [getFileName(config.files.worker)]: "./src/worker.ts",
     [getFileName(config.files.bundle)]: "./src/bundle.ts"
   },
-  outdir: "./dist/"
+  outdir: "./dist/",
+  logLevel: "info"
 };
 
 if (isDev) {
@@ -46,8 +47,6 @@ if (isDev) {
   console.log(server.url);
 } else {
   // bundle for production
-  const start = Date.now();
-
   console.log("Building...");
 
   // minify and treeshake output for production
@@ -56,7 +55,4 @@ if (isDev) {
     treeShaking: true,
     minify: true
   });
-
-  console.log("Done!");
-  console.log(`Built in ${Date.now() - start}ms`);
 }
