@@ -1,4 +1,4 @@
-import "./api/HTMLElement";
+import "./api/element";
 import "./api/history";
 import "./api/navigator";
 import "./api/network";

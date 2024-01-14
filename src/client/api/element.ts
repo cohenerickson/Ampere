@@ -65,21 +65,20 @@ Object.defineProperties(Element.prototype, {
   innerHTML: {
     set(value: string) {
       if (this instanceof HTMLScriptElement) {
-        return INNER_HTML?.set?.call(
-          this,
-          __$ampere.rewriteJS(value, __$ampere.base)
-        );
+        INNER_HTML?.set?.call(this, __$ampere.rewriteJS(value, __$ampere.base));
       } else if (this instanceof HTMLStyleElement) {
-        return INNER_HTML?.set?.call(
+        INNER_HTML?.set?.call(
           this,
           __$ampere.rewriteCSS(value, __$ampere.base)
         );
       } else {
-        return INNER_HTML?.set?.call(
+        INNER_HTML?.set?.call(
           this,
           __$ampere.rewriteHTML(value, __$ampere.base)
         );
       }
+
+      return value;
     },
     get() {
       return INNER_HTML?.get?.call(this);
@@ -88,18 +87,17 @@ Object.defineProperties(Element.prototype, {
   innerText: {
     set: function (value: string) {
       if (this instanceof HTMLScriptElement) {
-        return INNER_TEXT?.set?.call(
-          this,
-          __$ampere.rewriteJS(value, __$ampere.base)
-        );
+        INNER_TEXT?.set?.call(this, __$ampere.rewriteJS(value, __$ampere.base));
       } else if (this instanceof HTMLStyleElement) {
-        return INNER_TEXT?.set?.call(
+        INNER_TEXT?.set?.call(
           this,
           __$ampere.rewriteCSS(value, __$ampere.base)
         );
       } else {
-        return INNER_TEXT?.set?.call(this, value);
+        INNER_TEXT?.set?.call(this, value);
       }
+
+      return value;
     },
     get: function () {
       return INNER_TEXT?.get?.call(this);
@@ -226,21 +224,24 @@ Object.entries(ATTRIBUTE_REWRITES).forEach(([property, elements]) => {
       },
       set(value) {
         if (property === "href" || property === "src") {
-          return this.setAttribute(
+          this.setAttribute(
             property,
             __$ampere.rewriteURL(value, __$ampere.base)
           );
         } else if (property === "integrity") {
-          return attributes.setAttribute.call(this, `_${property}`, value);
+          attributes.setAttribute.call(this, `_${property}`, value);
         } else if (property === "srcdoc") {
           attributes.setAttribute.call(
             this,
             `srcdoc`,
             __$ampere.rewriteHTML(value, __$ampere.base)
           );
-          return attributes.setAttribute.call(this, `_${property}`, value);
+          attributes.setAttribute.call(this, `_${property}`, value);
         }
-        return set.call(this, value);
+
+        set.call(this, value);
+
+        return value;
       }
     });
   });
