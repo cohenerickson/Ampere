@@ -1,30 +1,23 @@
 /// <reference lib="webworker" />
-import { Config } from "./config";
+import { incoming, outgoing } from "./rewrite/headers";
+import { ProxyWorker, WorkerEvents } from "./util/ProxyWorker";
 import { TypedEmitter } from "./util/TypedEmitter";
-
-interface SWEvents {
-  request: (req: Request) => Request | Promise<Request | void> | void;
-  response: (res: Response) => Promise<void> | void;
-  html: (html: string) => string | Promise<string | void> | void;
-  css: (css: string) => string | Promise<string | void> | void;
-  js: (js: string) => string | Promise<string | void> | void;
-  manifest: (manifest: string) => string | Promise<string | void> | void;
-}
 
 declare var self: ServiceWorkerGlobalScope & {
   AmpereWorker: typeof AmpereWorker;
 };
 
-export class AmpereWorker extends TypedEmitter<SWEvents> {
+export class AmpereWorker
+  extends TypedEmitter<WorkerEvents>
+  implements ProxyWorker
+{
   ready: Promise<void>;
-  config: Config;
 
   constructor() {
     super();
 
-    this.config = __$ampere.config;
-
-    for (const plugin of this.config.plugins) {
+    // Load plugins
+    for (const plugin of __$ampere.config.plugins) {
       try {
         if (plugin.worker) {
           __$ampere.logger.info("Loading plugin", plugin.name);
@@ -45,17 +38,24 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     });
   }
 
+  async makeRequest(url: URL, init: RequestInit): Promise<Response> {
+    __$ampere.logger.info("Fetching", url.href);
+
+    return await __$ampere.bareClient.fetch(url, init);
+  }
+
   async fetch(event: FetchEvent): Promise<Response> {
     // wait for the SW to be ready
     await this.ready;
 
     // allow any internal scripts to load
+    const { files } = __$ampere.config;
     const ampereUrls = [
-      this.config.files.config,
-      this.config.files.client,
-      this.config.files.worker,
-      this.config.files.bundle
-    ].map((file) => this.config.files.directory + file);
+      files.config,
+      files.client,
+      files.worker,
+      files.bundle
+    ].map((file) => files.directory + file);
 
     const url = new URL(event.request.url);
 
@@ -112,20 +112,9 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
       requestInit.body = event.request.body;
     }
 
-    // fetch the resource
-    return this.getResource(event, proxyURL, requestInit);
-  }
-
-  private async getResource(
-    event: FetchEvent,
-    url: URL,
-    init: RequestInit & { duplex: "half" }
-  ) {
-    __$ampere.logger.info("Fetching", url.href);
-
     // create a request object
-    let request = new Request(url, init);
-    const requestHeaders = new Headers(init.headers);
+    let request = new Request(proxyURL, requestInit);
+    const requestHeaders = outgoing(new Headers(requestInit.headers), proxyURL);
 
     // make headers mutable
     Object.defineProperty(request, "headers", {
@@ -138,10 +127,7 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     request = (await this.emit("request", request)) ?? request;
 
     // make a request to the server
-    const bareRequest = await __$ampere.bareClient.fetch(request, {
-      // @ts-ignore Request objects don't have duplex property for some reason
-      duplex: "half"
-    });
+    const bareRequest = await this.makeRequest(proxyURL, requestInit);
 
     // handle redirects
     if (
@@ -151,7 +137,7 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     ) {
       __$ampere.logger.debug(
         "Redirecting from",
-        url.href,
+        proxyURL.href,
         "to",
         bareRequest.headers.get("location")
       );
@@ -161,7 +147,7 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
         headers: {
           location: __$ampere.rewriteURL(
             bareRequest.headers.get("location") as string,
-            url
+            proxyURL
           )
         }
       });
@@ -171,23 +157,23 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
     const responseInit: ResponseInit = {
       status: bareRequest.status,
       statusText: bareRequest.statusText,
-      headers: bareRequest.headers
+      headers: incoming(bareRequest.headers, proxyURL)
     };
 
     let responseBody: BodyInit | null;
     if ([101, 204, 205, 304].includes(bareRequest.status)) {
       // null response body for certain status codes
       responseBody = null;
-      __$ampere.logger.info("Returning empty response for", url.href);
+      __$ampere.logger.info("Returning empty response for", proxyURL.href);
     } else if (bareRequest.headers.get("content-type")?.includes("text/html")) {
-      __$ampere.logger.info("Rewriting HTML for", url.href);
+      __$ampere.logger.info("Rewriting HTML for", proxyURL.href);
       // Scope HTML
       let html = await bareRequest.text();
 
       // emit html event
       html = (await this.emit("html", html)) ?? html;
 
-      responseBody = __$ampere.rewriteHTML(html, url);
+      responseBody = __$ampere.rewriteHTML(html, proxyURL);
     } else if (
       bareRequest.headers
         .get("content-type")
@@ -195,36 +181,36 @@ export class AmpereWorker extends TypedEmitter<SWEvents> {
       // use || destination for non-strict mime type matching
       ["script", "sharedworker", "worker"].includes(event.request.destination)
     ) {
-      __$ampere.logger.info("Rewriting JS for", url.href);
+      __$ampere.logger.info("Rewriting JS for", proxyURL.href);
       // rewrite JS
       let js = await bareRequest.text();
 
       // emit js event
       js = (await this.emit("js", js)) ?? js;
 
-      responseBody = __$ampere.rewriteJS(js, url);
+      responseBody = __$ampere.rewriteJS(js, proxyURL);
     } else if (
       bareRequest.headers.get("content-type")?.includes("text/css") ||
       // use || destination for non-strict mime type matching
       ["style"].includes(event.request.destination)
     ) {
-      __$ampere.logger.info("Rewriting CSS for", url.href);
+      __$ampere.logger.info("Rewriting CSS for", proxyURL.href);
       // rewrite CSS
       let css = await bareRequest.text();
 
       // emit css event
       css = (await this.emit("css", css)) ?? css;
 
-      responseBody = __$ampere.rewriteCSS(css, url);
+      responseBody = __$ampere.rewriteCSS(css, proxyURL);
     } else if (event.request.destination === "manifest") {
       let manifest = await bareRequest.text();
 
       // emit manifest event
       manifest = (await this.emit("manifest", manifest)) ?? manifest;
 
-      responseBody = __$ampere.rewriteManifest(manifest, url);
+      responseBody = __$ampere.rewriteManifest(manifest, proxyURL);
     } else {
-      __$ampere.logger.info("Returning binary for", url.href);
+      __$ampere.logger.info("Returning binary for", proxyURL.href);
       responseBody = bareRequest.body;
     }
 

@@ -1,5 +1,4 @@
 import { Plugin } from "./plugins";
-import { DisableCSP } from "./plugins/DisableCSP";
 import { uri, Codec } from "./util/codec";
 
 export enum LogLevel {
@@ -25,14 +24,14 @@ export const config: Config = {
     worker: "worker.js",
     bundle: "bundle.js"
   },
-  plugins: [DisableCSP()]
+  plugins: []
 };
 
 export type Config = {
   prefix: `/${string}/` | "/";
   /**
    * Note: A bare server must support version 3
-  */
+   */
   server: (string | URL) | (string | URL)[];
   logLevel: LogLevel;
   codec: Codec;
