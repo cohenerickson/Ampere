@@ -19,16 +19,17 @@ export function rewriteURL(url: string | URL, meta: string | URL): string {
     const data = isBase64 ? atob(content) : decodeURIComponent(content);
 
     let rewritten = data;
-    switch (contentType) {
-      case "text/html":
-        rewritten = rewriteHTML(data, meta);
-      case "application/javascript":
-      case "text/javascript":
-        rewritten = rewriteJS(data, meta);
-      case "text/css":
-        rewritten = rewriteCSS(data, meta);
-      default:
-        rewritten = data;
+    if (contentType === "text/html") {
+      rewritten = rewriteHTML(data, meta);
+    } else if (
+      contentType === "application/javascript" ||
+      contentType === "text/javascript"
+    ) {
+      rewritten = rewriteJS(data, meta);
+    } else if (contentType === "text/css") {
+      rewritten = rewriteCSS(data, meta);
+    } else {
+      return url.toString();
     }
 
     return `data:${contentType}${isBase64 ? ";base64" : ""},${
