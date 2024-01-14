@@ -1,13 +1,15 @@
 import { TypedEmitter } from "./TypedEmitter";
 
-export interface WorkerEvents {
-  request: (req: Request) => Request | Promise<Request | void> | void;
-  response: (res: Response) => Promise<void> | void;
-  html: (html: string) => string | Promise<string | void> | void;
-  css: (css: string) => string | Promise<string | void> | void;
-  js: (js: string) => string | Promise<string | void> | void;
-  manifest: (manifest: string) => string | Promise<string | void> | void;
-}
+type EventHandler<T> = (value: T) => T | Promise<T | void> | void;
+
+type EventHandlers<T, N extends string> = {
+  [key in N | `pre:${N}` | `post:${N}`]: EventHandler<T>;
+};
+
+export type WorkerEvents = {
+  request: EventHandler<Request>;
+  response: EventHandler<Response>;
+} & EventHandlers<string, "html" | "css" | "js" | "manifest">;
 
 export abstract class ProxyWorker extends TypedEmitter<WorkerEvents> {
   abstract ready: Promise<void>;

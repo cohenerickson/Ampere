@@ -167,13 +167,17 @@ export class AmpereWorker
       __$ampere.logger.info("Returning empty response for", proxyURL.href);
     } else if (bareRequest.headers.get("content-type")?.includes("text/html")) {
       __$ampere.logger.info("Rewriting HTML for", proxyURL.href);
-      // Scope HTML
       let html = await bareRequest.text();
 
-      // emit html event
+      // emit pre:html event
       html = (await this.emit("html", html)) ?? html;
+      html = (await this.emit("pre:html", html)) ?? html;
 
-      responseBody = __$ampere.rewriteHTML(html, proxyURL);
+      // rewrite HTML
+      html = __$ampere.rewriteHTML(html, proxyURL);
+
+      // emit post:html event
+      responseBody = (await this.emit("post:html", html)) ?? html;
     } else if (
       bareRequest.headers
         .get("content-type")
@@ -182,33 +186,46 @@ export class AmpereWorker
       ["script", "sharedworker", "worker"].includes(event.request.destination)
     ) {
       __$ampere.logger.info("Rewriting JS for", proxyURL.href);
-      // rewrite JS
       let js = await bareRequest.text();
 
-      // emit js event
+      // emit pre:js event
       js = (await this.emit("js", js)) ?? js;
+      js = (await this.emit("pre:js", js)) ?? js;
 
-      responseBody = __$ampere.rewriteJS(js, proxyURL);
+      // rewrite JS
+      js = __$ampere.rewriteJS(js, proxyURL);
+
+      // emit post:js event
+      responseBody = (await this.emit("post:js", js)) ?? js;
     } else if (
       bareRequest.headers.get("content-type")?.includes("text/css") ||
       // use || destination for non-strict mime type matching
       ["style"].includes(event.request.destination)
     ) {
       __$ampere.logger.info("Rewriting CSS for", proxyURL.href);
-      // rewrite CSS
       let css = await bareRequest.text();
 
-      // emit css event
+      // emit pre:css event
       css = (await this.emit("css", css)) ?? css;
+      css = (await this.emit("pre:css", css)) ?? css;
 
-      responseBody = __$ampere.rewriteCSS(css, proxyURL);
+      // rewrite CSS
+      css = __$ampere.rewriteCSS(css, proxyURL);
+
+      // emit post:css event
+      responseBody = (await this.emit("post:css", css)) ?? css;
     } else if (event.request.destination === "manifest") {
+      __$ampere.logger.info("Rewriting Manifest for", proxyURL.href);
       let manifest = await bareRequest.text();
 
-      // emit manifest event
+      // emit pre:manifest event
       manifest = (await this.emit("manifest", manifest)) ?? manifest;
+      manifest = (await this.emit("pre:manifest", manifest)) ?? manifest;
 
-      responseBody = __$ampere.rewriteManifest(manifest, proxyURL);
+      manifest = __$ampere.rewriteManifest(manifest, proxyURL);
+
+      // emit post:manifest event
+      responseBody = (await this.emit("post:manifest", manifest)) ?? manifest;
     } else {
       __$ampere.logger.info("Returning binary for", proxyURL.href);
       responseBody = bareRequest.body;
