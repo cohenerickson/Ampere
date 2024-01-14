@@ -10,7 +10,8 @@ import {
   setAttribute,
   getTextContent,
   setTextContent,
-  Element
+  Element,
+  hasAttribute
 } from "@parse5/tools";
 import { parse, serialize } from "parse5";
 import { Node } from "parse5/dist/tree-adapters/default";
@@ -91,6 +92,14 @@ export function rewriteHTML(html: string, meta: string | URL): string {
         const content = getTextContent(node);
 
         if (content) setTextContent(node, rewriteCSS(content, meta));
+      }
+
+      if (hasAttribute(node, "style")) {
+        const style = getAttribute(node, "style");
+
+        if (style) {
+          setAttribute(node, "style", rewriteCSS(style, meta));
+        }
       }
 
       // HREF attributes
