@@ -1,5 +1,6 @@
 import { Plugin } from "./plugins";
-import { uri, Codec } from "./util/codec";
+import { Codec } from "./util/codec";
+import { uri } from "./util/codec/uri";
 
 export enum LogLevel {
   None,
