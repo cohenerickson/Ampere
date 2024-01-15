@@ -1,6 +1,4 @@
 // TODO: contentWindow and contentDocument
-import { unwriteURL } from "../../rewrite/unwriteURL";
-
 const ATTRIBUTE_FUNCTIONS = [
   "getAttribute",
   "setAttribute",
@@ -60,6 +58,12 @@ const INNER_TEXT = Object.getOwnPropertyDescriptor(
   Element.prototype,
   "innerText"
 );
+
+Object.defineProperty(Node.prototype, "baseURI", {
+  get() {
+    return __$ampere.base;
+  }
+});
 
 Object.defineProperties(Element.prototype, {
   innerHTML: {
@@ -218,16 +222,13 @@ Object.entries(ATTRIBUTE_REWRITES).forEach(([property, elements]) => {
     Object.defineProperty(element.prototype, property, {
       get() {
         if (property === "href" || property === "src") {
-          return unwriteURL(this.getAttribute(property));
+          return __$ampere.unwriteURL(this.getAttribute(property));
         }
         return get.call(this);
       },
       set(value) {
         if (property === "href" || property === "src") {
-          this.setAttribute(
-            property,
-            __$ampere.rewriteURL(value, __$ampere.base)
-          );
+          attributes.setAttribute.call(this, property, __$ampere.rewriteURL(value, __$ampere.base));
         } else if (property === "integrity") {
           attributes.setAttribute.call(this, `_${property}`, value);
         } else if (property === "srcdoc") {
@@ -237,9 +238,9 @@ Object.entries(ATTRIBUTE_REWRITES).forEach(([property, elements]) => {
             __$ampere.rewriteHTML(value, __$ampere.base)
           );
           attributes.setAttribute.call(this, `_${property}`, value);
+        } else {
+          set.call(this, value);
         }
-
-        set.call(this, value);
 
         return value;
       }
