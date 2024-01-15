@@ -1,5 +1,6 @@
 import document from "./document";
 import location from "./location";
+import { createEvalProxy } from "./scripting";
 
 const backup = new Map<
   Window & typeof globalThis,
@@ -38,7 +39,8 @@ export default function window(
           case "globalThis":
             // @ts-ignore
             return window(meta.globalThis);
-
+          case "eval":
+            return createEvalProxy(meta.eval);
           default:
             const value = meta[prop as keyof Window];
 

@@ -24,8 +24,6 @@ export function scope(value: any): any {
       return window(value);
     case "Location":
       return location(value);
-    case "History":
-      break;
     case "Storage":
       break;
     case "HTMLDocument":
@@ -33,7 +31,7 @@ export function scope(value: any): any {
     case "postMessage":
       break;
     case "eval":
-      break;
+      return window(self.window).eval;
   }
 
   return value;
