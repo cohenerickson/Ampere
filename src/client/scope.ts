@@ -1,5 +1,6 @@
 import document from "./api/document";
 import location from "./api/location";
+import storage from "./api/storage";
 import window from "./api/window";
 
 export function scope(value: any): any {
@@ -25,7 +26,7 @@ export function scope(value: any): any {
     case "Location":
       return location(value);
     case "Storage":
-      break;
+      return storage(value);
     case "HTMLDocument":
       return document(value);
     case "postMessage":
