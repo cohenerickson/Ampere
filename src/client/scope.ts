@@ -1,7 +1,7 @@
-import document from "./api/document";
-import location from "./api/location";
-import storage from "./api/storage";
-import window from "./api/window";
+import { createDocumentProxy } from "./api/document";
+import { createLocationProxy } from "./api/location";
+import { createStorageProxy } from "./api/storage";
+import { createWindowProxy } from "./api/window";
 
 export function scope(value: any): any {
   if (!value) return value;
@@ -22,17 +22,17 @@ export function scope(value: any): any {
 
   switch (type || functionName) {
     case "Window":
-      return window(value);
+      return createWindowProxy(value);
     case "Location":
-      return location(value);
+      return createLocationProxy(value);
     case "Storage":
-      return storage(value);
+      return createStorageProxy(value);
     case "HTMLDocument":
-      return document(value);
+      return createDocumentProxy(value);
     case "postMessage":
       break;
     case "eval":
-      return window(self.window).eval;
+      return createWindowProxy(window).eval;
   }
 
   return value;

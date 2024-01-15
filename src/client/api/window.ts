@@ -1,13 +1,14 @@
-import document from "./document";
-import location from "./location";
+import { createDocumentProxy } from "./document";
+import { createLocationProxy } from "./location";
 import { createEvalProxy } from "./scripting";
+import { createStorageProxy } from "./storage";
 
 const backup = new Map<
   Window & typeof globalThis,
   Window & typeof globalThis
 >();
 
-export default function window(
+export function createWindowProxy(
   meta: Window & typeof globalThis
 ): Window & typeof globalThis {
   let bk = backup.get(meta);
@@ -21,26 +22,30 @@ export default function window(
       get(target, prop, receiver) {
         switch (prop) {
           case "location":
-            return location(meta.location);
+            return createLocationProxy(meta.location);
           case "window":
-            return window(meta.window);
+            return createWindowProxy(meta.window);
           case "document":
-            return document(meta.document);
+            return createDocumentProxy(meta.document);
           case "self":
-            return window(meta.self);
+            return createWindowProxy(meta.self);
           case "top":
             // @ts-ignore
             return window(meta.top ?? meta.parent);
           case "parent":
             // @ts-ignore
-            return window(meta.parent);
+            return createWindowProxy(meta.parent);
           case "opener":
-            return window(meta.opener);
+            return createWindowProxy(meta.opener);
           case "globalThis":
             // @ts-ignore
-            return window(meta.globalThis);
+            return createWindowProxy(meta.globalThis);
           case "eval":
             return createEvalProxy(meta.eval);
+          case "localStorage":
+            return createStorageProxy(meta.localStorage);
+          case "sessionStorage":
+            return createStorageProxy(meta.sessionStorage);
           default:
             const value = meta[prop as keyof Window];
 

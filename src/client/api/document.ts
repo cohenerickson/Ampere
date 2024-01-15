@@ -1,9 +1,9 @@
 import { unwriteURL } from "../../rewrite/unwriteURL";
-import location from "./location";
+import { createLocationProxy } from "./location";
 
 const backup = new Map<Document, Document>();
 
-export default function document(meta: Document): Document {
+export function createDocumentProxy(meta: Document): Document {
   let bk = backup.get(meta);
 
   if (Object.values(backup).includes(meta)) {
@@ -15,9 +15,9 @@ export default function document(meta: Document): Document {
       get(target, prop, receiver) {
         switch (prop) {
           case "location":
-            return location(meta.location);
+            return createLocationProxy(meta.location);
           case "documentURI":
-            return location(meta.location).toString();
+            return createLocationProxy(meta.location).toString();
           case "baseURI":
             return __$ampere.base;
           case "cookie":
@@ -30,9 +30,9 @@ export default function document(meta: Document): Document {
               return "";
             }
           case "URL":
-            return location(meta.location).toString();
+            return createLocationProxy(meta.location).toString();
           case "domain":
-            return location(meta.location).hostname;
+            return createLocationProxy(meta.location).hostname;
           case "write":
             return (...html: string[]): void => {
               meta.write(__$ampere.rewriteHTML(html.join(""), __$ampere.base));
@@ -43,7 +43,7 @@ export default function document(meta: Document): Document {
             };
           case "open":
             return (...args: any[]) => {
-              document(meta.open(...args));
+              createDocumentProxy(meta.open(...args));
             };
           default:
             const value = meta[prop as keyof Document];

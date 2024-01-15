@@ -2,7 +2,7 @@ import { createDOMStringList } from "../../util/DOMStringList";
 
 const backup = new Map<Location, Location>();
 
-export default function location(meta: Location): Location {
+export function createLocationProxy(meta: Location): Location {
   let bk = backup.get(meta);
 
   if (Object.values(backup).includes(meta)) {

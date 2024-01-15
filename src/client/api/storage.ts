@@ -1,6 +1,6 @@
 const backup = new Map<Storage, Storage>();
 
-export default function createStorageProxy(meta: Storage): Storage {
+export function createStorageProxy(meta: Storage): Storage {
   let bk = backup.get(meta);
 
   if (!bk) {

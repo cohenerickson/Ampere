@@ -1,8 +1,9 @@
+import { rewriteURL } from "./url";
 import { WebAppManifest } from "web-app-manifest";
 
 function rewriteSrcKey(resource: { src?: string }, meta: string | URL) {
   if (resource.src) {
-    resource.src = __$ampere.rewriteURL(resource.src, meta);
+    resource.src = rewriteURL(resource.src, meta);
   }
 
   return resource;
@@ -10,7 +11,7 @@ function rewriteSrcKey(resource: { src?: string }, meta: string | URL) {
 
 function rewriteUrlKey(resource: { url?: string }, meta: string | URL) {
   if (resource.url) {
-    resource.url = __$ampere.rewriteURL(resource.url, meta);
+    resource.url = rewriteURL(resource.url, meta);
   }
 
   return resource;
@@ -36,12 +37,12 @@ export function rewriteManifest(manifest: string, meta: string | URL): string {
 
     // Rewrite start url
     if (parsed.start_url) {
-      parsed.start_url = __$ampere.rewriteURL(parsed.start_url, meta);
+      parsed.start_url = rewriteURL(parsed.start_url, meta);
     }
 
     // Rewrite scope
     if (parsed.scope) {
-      parsed.scope = __$ampere.rewriteURL(parsed.scope, meta);
+      parsed.scope = rewriteURL(parsed.scope, meta);
     }
 
     // Rewrite related applications
