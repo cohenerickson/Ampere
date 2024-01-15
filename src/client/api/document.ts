@@ -41,10 +41,6 @@ export function createDocumentProxy(meta: Document): Document {
             return (...html: string[]): void => {
               meta.write(__$ampere.rewriteHTML(html.join(""), __$ampere.base));
             };
-          case "open":
-            return (...args: any[]) => {
-              createDocumentProxy(meta.open(...args));
-            };
           default:
             const value = meta[prop as keyof Document];
 
