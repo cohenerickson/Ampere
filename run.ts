@@ -2,6 +2,7 @@ import { config } from "./src/config";
 import { BuildOptions, build } from "esbuild";
 import { clean } from "esbuild-plugin-clean";
 import { createServer } from "esbuild-server";
+import { writeFile } from "fs/promises";
 import { basename } from "path";
 
 const isDev = process.argv.includes("--dev");
@@ -28,7 +29,8 @@ const baseConfig: BuildOptions = {
     [getFileName(config.files.bundle)]: "./src/bundle.ts"
   },
   outdir: "./dist/",
-  logLevel: "info"
+  logLevel: "info",
+  metafile: true
 };
 
 if (isDev) {
@@ -50,9 +52,13 @@ if (isDev) {
   console.log("Building...");
 
   // minify and treeshake output for production
-  await build({
+  const result = await build({
     ...baseConfig,
     treeShaking: true,
     minify: true
   });
+
+  if (result.metafile) {
+    await writeFile("./metafile.json", JSON.stringify(result.metafile));
+  }
 }
