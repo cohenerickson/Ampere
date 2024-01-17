@@ -3,7 +3,7 @@ import { rewriteURL } from "./url";
 export function rewriteCSS(css: string, meta: string | URL): string {
   // Regex fuckery
   return css.replace(
-    /(?<!(?:["']|@import\s))(?:@import\s?(?:url)?|url)\(?['"]?(?<url>.*?)['")]/gim,
+    /(?<!(?:["']|@import\s*))(?:@import\s*(?:url)?|url)\(?['"]?(?<url>.*?)['")]/gim,
     (...args) => {
       try {
         const groups = args[args.length - 1];
