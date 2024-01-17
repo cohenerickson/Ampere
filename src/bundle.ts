@@ -5,9 +5,9 @@ import { rewriteManifest } from "./rewrite/manifest";
 import { rewriteSrcSet } from "./rewrite/srcset";
 import { unwriteURL } from "./rewrite/unwriteURL";
 import { rewriteURL } from "./rewrite/url";
+import { setCookie, getCookie } from "./util/cookie";
 import { logger } from "./util/logger";
 import { BareClient } from "@tomphttp/bare-client";
-
 
 // TODO: pick bare server with lowest latency
 let bareClient: BareClient;
@@ -36,7 +36,9 @@ export const bundle = {
   rewriteManifest,
   logger,
   bareClient,
-  bare
+  bare,
+  setCookie,
+  getCookie
 };
 
 Object.defineProperty(Object.prototype, "__$ampere", {

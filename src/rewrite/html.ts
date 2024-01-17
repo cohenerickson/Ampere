@@ -47,7 +47,11 @@ declare global {
   }
 }
 
-export function rewriteHTML(html: string, meta: string | URL): string {
+export function rewriteHTML(
+  html: string,
+  meta: string | URL,
+  cookie: string
+): string {
   const document = parse(html);
 
   const base = query(document, (node) => node.nodeName === "base") as Element;
@@ -125,7 +129,7 @@ export function rewriteHTML(html: string, meta: string | URL): string {
         const srcdoc = getAttribute(node, "srcdoc");
 
         if (srcdoc) {
-          setAttribute(node, "srcdoc", rewriteHTML(srcdoc, meta));
+          setAttribute(node, "srcdoc", rewriteHTML(srcdoc, meta, cookie));
         }
       }
 
@@ -216,7 +220,7 @@ export function rewriteHTML(html: string, meta: string | URL): string {
       meta
     )}" />` +
     // Inject proxy scripts
-    `  <script>Object.defineProperty(Object.prototype,"__$ampere",{value:Object.assign(globalThis.__$ampere||{},{base:"${meta.toString()}"}),configurable:false,enumerable:false});</script>` +
+    `  <script>Object.defineProperty(Object.prototype,"__$ampere",{value:Object.assign(globalThis.__$ampere||{},{base:"${meta.toString()}",cookie:"${cookie}"}),configurable:false,enumerable:false});</script>` +
     `  <script src="${files.directory + files.config}"></script>` +
     `  <script src="${files.directory + files.bundle}"></script>` +
     `  <script src="${files.directory + files.client}"></script>` +

@@ -1,4 +1,4 @@
-import { unwriteURL } from "../../rewrite/unwriteURL";
+import { setCookie } from "./cookie";
 import { createLocationProxy } from "./location";
 
 const backup = new Map<Document, Document>();
@@ -21,11 +21,10 @@ export function createDocumentProxy(meta: Document): Document {
           case "baseURI":
             return __$ampere.base;
           case "cookie":
-            // TODO: cookies and storage
-            return "";
+            return __$ampere.cookie;
           case "referrer":
             try {
-              return unwriteURL(new URL(meta.referrer).pathname);
+              return __$ampere.unwriteURL(new URL(meta.referrer).pathname);
             } catch {
               return "";
             }
@@ -35,11 +34,23 @@ export function createDocumentProxy(meta: Document): Document {
             return createLocationProxy(meta.location).hostname;
           case "write":
             return (...html: string[]): void => {
-              meta.write(__$ampere.rewriteHTML(html.join(""), __$ampere.base));
+              meta.write(
+                __$ampere.rewriteHTML(
+                  html.join(""),
+                  __$ampere.base,
+                  __$ampere.cookie
+                )
+              );
             };
           case "writeln":
             return (...html: string[]): void => {
-              meta.write(__$ampere.rewriteHTML(html.join(""), __$ampere.base));
+              meta.write(
+                __$ampere.rewriteHTML(
+                  html.join(""),
+                  __$ampere.base,
+                  __$ampere.cookie
+                )
+              );
             };
           default:
             const value = meta[prop as keyof Document];
@@ -59,9 +70,8 @@ export function createDocumentProxy(meta: Document): Document {
         }
       },
       set(target, prop, newValue, receiver) {
-        // TODO: Cookies and storage
         if (prop === "cookie") {
-          return true;
+          return setCookie(newValue);
         }
 
         // @ts-ignore

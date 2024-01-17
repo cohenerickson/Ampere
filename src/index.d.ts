@@ -7,6 +7,7 @@ declare global {
     config: Config;
     scope: typeof scope;
     base: string;
+    cookie: string;
   };
 
   var __$ampere: AmpereGlobal;

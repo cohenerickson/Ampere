@@ -39,7 +39,7 @@ export class AmpereWorker
   }
 
   async makeRequest(url: URL, init: RequestInit): Promise<Response> {
-    __$ampere.logger.info("Fetching", url.href);
+    __$ampere.logger.info("Fetching", url.href, init);
 
     return await __$ampere.bareClient.fetch(url, init);
   }
@@ -69,25 +69,6 @@ export class AmpereWorker
     const rawProxyURL =
       __$ampere.unwriteURL(url.pathname) + url.search + url.hash;
 
-    // If the URL contains a hash or search (non-encoded data) we redirect to the encoded URL
-    // BUG: This may cause POST requests to be redirected to GET requests from form submits
-    // Either handle form submits on the client or allow non-encoded data in the URL
-    if (url.search || url.hash) {
-      __$ampere.logger.debug(
-        "Detected non-encoded data in URL, redirecting from",
-        url.href,
-        "to",
-        __$ampere.rewriteURL(rawProxyURL, url)
-      );
-
-      return new Response(null, {
-        status: 301,
-        headers: {
-          location: __$ampere.rewriteURL(rawProxyURL, url)
-        }
-      });
-    }
-
     // error checking on URL
     try {
       new URL(rawProxyURL);
@@ -114,7 +95,10 @@ export class AmpereWorker
 
     // create a request object
     let request = new Request(proxyURL, requestInit);
-    const requestHeaders = outgoing(new Headers(requestInit.headers), proxyURL);
+    const requestHeaders: Headers = await outgoing(
+      new Headers(requestInit.headers),
+      proxyURL
+    );
 
     // make headers mutable
     Object.defineProperty(request, "headers", {
@@ -157,7 +141,7 @@ export class AmpereWorker
     const responseInit: ResponseInit = {
       status: bareRequest.status,
       statusText: bareRequest.statusText,
-      headers: incoming(bareRequest.headers, proxyURL)
+      headers: await incoming(bareRequest.headers, proxyURL)
     };
 
     let responseBody: BodyInit | null;
@@ -173,8 +157,10 @@ export class AmpereWorker
       html = (await this.emit("html", html)) ?? html;
       html = (await this.emit("pre:html", html)) ?? html;
 
+      const cookie = await __$ampere.getCookie(proxyURL);
+
       // rewrite HTML
-      html = __$ampere.rewriteHTML(html, proxyURL);
+      html = __$ampere.rewriteHTML(html, proxyURL, cookie ?? "");
 
       // emit post:html event
       responseBody = (await this.emit("post:html", html)) ?? html;
