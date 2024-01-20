@@ -20,7 +20,7 @@ export function rewriteURL(url: string | URL, meta: string | URL): string {
 
     let rewritten = data;
     if (contentType === "text/html") {
-      rewritten = rewriteHTML(data, meta);
+      rewritten = rewriteHTML(data, meta, __$ampere.cookie ?? "");
     } else if (
       contentType === "application/javascript" ||
       contentType === "text/javascript"

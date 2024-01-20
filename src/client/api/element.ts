@@ -78,7 +78,7 @@ Object.defineProperties(Element.prototype, {
       } else {
         INNER_HTML?.set?.call(
           this,
-          __$ampere.rewriteHTML(value, __$ampere.base)
+          __$ampere.rewriteHTML(value, __$ampere.base, __$ampere.cookie)
         );
       }
 
@@ -228,14 +228,25 @@ Object.entries(ATTRIBUTE_REWRITES).forEach(([property, elements]) => {
       },
       set(value) {
         if (property === "href" || property === "src") {
-          attributes.setAttribute.call(this, property, __$ampere.rewriteURL(value, __$ampere.base));
+          attributes.setAttribute.call(
+            this,
+            property,
+            __$ampere.rewriteURL(value, __$ampere.base)
+          );
         } else if (property === "integrity") {
+          attributes.setAttribute.call(this, `_${property}`, value);
+        } else if (property === "srcset") {
+          attributes.setAttribute.call(
+            this,
+            `srcset`,
+            __$ampere.rewriteSrcSet(value, __$ampere.base)
+          );
           attributes.setAttribute.call(this, `_${property}`, value);
         } else if (property === "srcdoc") {
           attributes.setAttribute.call(
             this,
             `srcdoc`,
-            __$ampere.rewriteHTML(value, __$ampere.base)
+            __$ampere.rewriteHTML(value, __$ampere.base, __$ampere.cookie)
           );
           attributes.setAttribute.call(this, `_${property}`, value);
         } else {
