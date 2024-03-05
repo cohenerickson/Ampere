@@ -38,8 +38,8 @@ dependencies:
 
 devDependencies:
   '@tomphttp/bare-server-node':
-    specifier: ^2.0.1
-    version: 2.0.1
+    specifier: ^2.0.2
+    version: 2.0.2
   '@trivago/prettier-plugin-sort-imports':
     specifier: ^4.3.0
     version: 4.3.0(prettier@3.1.1)
@@ -512,15 +512,14 @@ packages:
     resolution: {integrity: sha512-xhcflOpwr92tkpp8SoDhB3nK3LHMBIjx+vgow37XobQew2k0/mXSxmaU7BsDFpOIa1CcLCEsR8gWn0v7Cy9+7Q==}
     dev: false
 
-  /@tomphttp/bare-server-node@2.0.1:
-    resolution: {integrity: sha512-L42TC/AldYRFBRZSxhkI0FC5TL8EC/NAsepNC/cWYTTiHQJ7mGg/vdTqNz8ShTYHr6LTHYkuD3/81nhX55SYtA==}
+  /@tomphttp/bare-server-node@2.0.2:
+    resolution: {integrity: sha512-C9UPAY2gNF4mY+2r2wyRqz8tK6Qv4Ps5Q0P8kZx1tCw9oIaTnwfcofEKIyJY7ds6bYnCd1TE7PVz6AioNVuQQA==}
     engines: {node: '>=18.0.0'}
     hasBin: true
     dependencies:
       async-exit-hook: 2.0.1
       commander: 10.0.1
       dotenv: 16.3.1
-      headers-polyfill: 3.3.0
       http-errors: 2.0.0
       ipaddr.js: 2.1.0
       source-map-support: 0.5.21
@@ -1081,10 +1080,6 @@ packages:
     engines: {node: '>= 0.4'}
     dependencies:
       function-bind: 1.1.2
-    dev: true
-
-  /headers-polyfill@3.3.0:
-    resolution: {integrity: sha512-5e57etwBpNcDc0b6KCVWEh/Ro063OxPvzVimUdM0/tsYM/T7Hfy3kknIGj78SFTOhNd8AZY41U8mOHoO4LzmIQ==}
     dev: true
 
   /http-errors@2.0.0:

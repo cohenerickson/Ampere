@@ -30,7 +30,7 @@
     "set-cookie-parser": "^2.6.0"
   },
   "devDependencies": {
-    "@tomphttp/bare-server-node": "^2.0.1",
+    "@tomphttp/bare-server-node": "^2.0.2",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@types/crypto-js": "^4.2.1",
     "@types/estree": "^1.0.5",
